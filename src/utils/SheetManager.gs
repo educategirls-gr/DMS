@@ -34,8 +34,15 @@ function invalidateCache(tabName) {
 
 // ──────────────────────────────────────────────────────────────
 
+// Script-level cache — SpreadsheetApp.openById() is expensive, call once per execution
+var _SS = null;
+function _getSpreadsheet() {
+  if (!_SS) _SS = SpreadsheetApp.openById(CONFIG.SHEET_ID);
+  return _SS;
+}
+
 function getSheet(tabName) {
-  return SpreadsheetApp.openById(CONFIG.SHEET_ID).getSheetByName(tabName);
+  return _getSpreadsheet().getSheetByName(tabName);
 }
 
 function getSheetData(tabName) {
@@ -72,15 +79,10 @@ function appendRow(tabName, rowData) {
 }
 
 function findRowIndex(tabName, columnName, value) {
-  const sheet = getSheet(tabName);
-  const data = sheet.getDataRange().getValues();
-  if (data.length < 2) return -1;
-  const colIndex = data[0].indexOf(columnName);
-  if (colIndex === -1) return -1;
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][colIndex] === value) return i + 1; // 1-based row number
-  }
-  return -1;
+  // Use cached sheet data — avoid extra Sheets API call
+  const rows = getSheetData(tabName);
+  const idx  = rows.findIndex(r => r[columnName] === value);
+  return idx === -1 ? -1 : idx + 2; // +2 = header row (1) + 0-based to 1-based
 }
 
 function updateCell(tabName, rowNumber, columnName, value) {
