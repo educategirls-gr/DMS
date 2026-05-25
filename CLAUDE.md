@@ -2,8 +2,8 @@
 
 ## Live URLs
 - **Web App:** https://up.egtau.org
-- **Web App (GAS direct):** https://script.google.com/a/macros/educategirls.ngo/s/AKfycbyXUyOqDjBhAnGdNZGyuGbc6K2vfRZdAwGSQo3dWItIV4itnt7SLOj50jsRvOQlEiXNug/exec
-- **Script Editor:** https://script.google.com/u/1/home/projects/1qAyh5GVXyNvaLSf8U7ouWUAWUiVoWLJwMJ20fynocwn2xBj0OA9ZU2aS/edit
+- **Web App (GAS direct):** https://script.google.com/macros/s/AKfycbxpUe9Q9rjqosTf9JBad7KYreB_l215m4i38YD663p_AFMTcUYTXPFLXj0BSVbRIllWgw/exec
+- **Script Editor:** https://script.google.com/home/projects/1or17GBvY1VZD3AAELgboCRx309D2nKHZxCtcIt9vmwnDG8FMDyEOq9EI/edit
 - **Sheet:** https://docs.google.com/spreadsheets/d/110GnDeFCrE9PijXhrBAWYpXQ6iZNXy1ON6cNfnyh6Ik/edit
 - **Drive Folder:** https://drive.google.com/drive/folders/1VXGx0oZmCSxG7uAta2m0XXlzhLsONCzW
 
