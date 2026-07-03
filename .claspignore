@@ -1,0 +1,14 @@
+**/.claude/**
+.claude/**
+**/.git/**
+**/docs/**
+**/node_modules/**
+**/*.md
+src/appsscript.json
+**/transform.py
+**/dropdowns.json
+**/PROJECT_STATE.md
+**/CNAME
+**/.clasp.json
+**/.claspignore
+**/.gitignore
