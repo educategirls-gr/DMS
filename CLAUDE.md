@@ -1,7 +1,7 @@
 # DMS-UP-Shiksha — Project Context for Claude Code
 
 ## Live URLs
-- **Web App:** https://up.egtau.org
+- **Web App:** https://dms.dataimpact.in
 - **Web App (GAS direct):** https://script.google.com/macros/s/AKfycbxpUe9Q9rjqosTf9JBad7KYreB_l215m4i38YD663p_AFMTcUYTXPFLXj0BSVbRIllWgw/exec
 - **Script Editor:** https://script.google.com/home/projects/1or17GBvY1VZD3AAELgboCRx309D2nKHZxCtcIt9vmwnDG8FMDyEOq9EI/edit
 - **Sheet:** https://docs.google.com/spreadsheets/d/110GnDeFCrE9PijXhrBAWYpXQ6iZNXy1ON6cNfnyh6Ik/edit

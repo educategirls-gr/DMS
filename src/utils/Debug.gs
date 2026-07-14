@@ -46,10 +46,21 @@ function debugDriveAccess() {
 }
 
 function debugCheckUsersSheet() {
+  const sheet   = SpreadsheetApp.openById(CONFIG.SHEET_ID).getSheetByName(CONFIG.TABS.USERS);
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  Logger.log('=== Column headers ===');
+  Logger.log(JSON.stringify(headers));
+
   const users = getSheetData(CONFIG.TABS.USERS);
   Logger.log('Total users: ' + users.length);
   users.forEach(u => {
-    Logger.log('Email: ' + u.email + ' | Role: ' + u.role + ' | is_active: ' + u.is_active + ' (type: ' + typeof u.is_active + ')');
+    Logger.log(
+      'Email: ' + u.email +
+      ' | Role: ' + u.role +
+      ' | state: [' + u.state + ']' +
+      ' | state_group: [' + u.state_group + ']' +
+      ' | is_active: ' + u.is_active
+    );
   });
 }
 
@@ -202,6 +213,97 @@ function clearAllTestData() {
   } catch(e) {
     Logger.log('❌ Critical error: ' + e.toString());
   }
+}
+
+// ── Debug: dump recent Documents rows (uploader/status/state) ──
+// Use this to diagnose "document not visible to others" issues.
+function debugListRecentDocs(limit) {
+  limit = limit || 15;
+  const docs  = getSheetData(CONFIG.TABS.DOCUMENTS);
+  const users = getSheetData(CONFIG.TABS.USERS);
+
+  const recent = docs.slice(-limit);
+  Logger.log('=== Last ' + recent.length + ' documents ===');
+  recent.forEach(function(d) {
+    const uploader = users.find(function(u) { return u.email === d.uploader_email; });
+    Logger.log(
+      'doc_id: ' + d.doc_id +
+      ' | uploader: ' + d.uploader_name + ' (' + d.uploader_email + ')' +
+      ' | uploader_role: ' + (uploader ? uploader.role : '???') +
+      ' | status: [' + d.status + ']' +
+      ' | state: [' + d.state + ']' +
+      ' | target_component: [' + d.target_component + ']' +
+      ' | subject: ' + d.subject
+    );
+  });
+
+  Logger.log('');
+  Logger.log('=== All active users (email | role | state) ===');
+  users.filter(function(u){ return u.is_active === true; }).forEach(function(u) {
+    Logger.log(u.email + ' | ' + u.role + ' | state: [' + u.state + ']');
+  });
+}
+
+// ── FIX: add missing state/target_component columns + backfill ──
+// Root cause: Documents sheet never had 'state'/'target_component' columns,
+// so appendRow() silently dropped those fields for every upload (see
+// SheetManager.gs appendRow — it only writes keys matching existing headers).
+// This made matchesAudience('') return false, hiding docs from team_lead/
+// state_lead/project_manager viewers. Run this once.
+function fixDocumentsStateColumn() {
+  const sheet   = getSheet(CONFIG.TABS.DOCUMENTS);
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+  // 1. Add missing columns
+  ['target_component', 'state'].forEach(function(col) {
+    if (!headers.includes(col)) {
+      const nextCol = sheet.getLastColumn() + 1;
+      sheet.getRange(1, nextCol).setValue(col)
+        .setBackground('#1a237e').setFontColor('#ffffff').setFontWeight('bold');
+      Logger.log('Added column: ' + col);
+      headers.push(col);
+    }
+  });
+
+  // 2. Backfill blank 'state' on existing rows using the same logic uploadDocument() uses
+  const users     = getSheetData(CONFIG.TABS.USERS);
+  const stateCol  = headers.indexOf('state') + 1;
+  const data      = sheet.getDataRange().getValues();
+  const docHeaders = data[0];
+  const emailCol  = docHeaders.indexOf('uploader_email');
+  const stateColIdx = docHeaders.indexOf('state');
+
+  let fixed = 0;
+  for (let i = 1; i < data.length; i++) {
+    const existingState = data[i][stateColIdx];
+    if (existingState) continue; // already has a value, skip
+
+    const uploaderEmail = data[i][emailCol];
+    const uploader = users.find(function(u) { return u.email === uploaderEmail; });
+    const role     = uploader ? (uploader.role || '').toLowerCase().trim() : '';
+    const myState  = uploader ? (uploader.state || '') : '';
+    const myGroup  = uploader && uploader.state_group ? uploader.state_group : getStateGroup(myState);
+
+    let docState;
+    switch (role) {
+      case CONFIG.ROLES.MANAGER:
+        docState = myState; break;
+      case CONFIG.ROLES.TEAM_LEAD:
+        docState = 'MANAGERS:' + myState; break;
+      case CONFIG.ROLES.STATE_LEAD:
+        docState = 'TEAM_LEADS:' + myState; break;
+      case CONFIG.ROLES.PROJECT_MANAGER:
+        docState = 'STATE_LEADS:' + myGroup; break;
+      default:
+        docState = 'ALL'; // it_admin, super_admin, ceo, communication, unknown
+    }
+
+    sheet.getRange(i + 1, stateColIdx + 1).setValue(docState);
+    fixed++;
+  }
+
+  invalidateCache(CONFIG.TABS.DOCUMENTS);
+  Logger.log('✅ Backfilled state on ' + fixed + ' document(s).');
 }
 
 // ── Run once to add a new user ──
