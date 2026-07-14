@@ -306,6 +306,33 @@ function fixDocumentsStateColumn() {
   Logger.log('✅ Backfilled state on ' + fixed + ' document(s).');
 }
 
+// ── FIX: trim stray whitespace in Users sheet 'role' column ──
+// Root cause: frontend (Index.html buildSidebar etc.) does
+// (SESSION.role||'').toLowerCase() WITHOUT .trim(), and SESSION.role comes
+// straight from the Users sheet's raw cell value. A role like "team_lead  "
+// (trailing spaces) then fails ['team_lead','it_admin'].includes(role),
+// silently hiding the Verify Documents tab for that user. Run this once.
+function trimUserRoles() {
+  const sheet   = getSheet(CONFIG.TABS.USERS);
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const roleCol = headers.indexOf('role');
+  if (roleCol === -1) { Logger.log('No role column found.'); return; }
+
+  const data = sheet.getDataRange().getValues();
+  let fixed = 0;
+  for (let i = 1; i < data.length; i++) {
+    const raw     = data[i][roleCol];
+    const trimmed = (raw || '').toString().trim();
+    if (raw !== trimmed) {
+      sheet.getRange(i + 1, roleCol + 1).setValue(trimmed);
+      Logger.log('Trimmed role for row ' + (i + 1) + ': [' + raw + '] → [' + trimmed + ']');
+      fixed++;
+    }
+  }
+  invalidateCache(CONFIG.TABS.USERS);
+  Logger.log('✅ Fixed ' + fixed + ' role value(s).');
+}
+
 // ── Run once to add a new user ──
 function addUser_GauravMishra() {
   const sheet = getSheet(CONFIG.TABS.USERS);

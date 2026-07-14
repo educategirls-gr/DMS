@@ -9,6 +9,27 @@
 
 ---
 
+## ⚠️ Deployment Architecture — Read Before Redeploying
+
+`dms.dataimpact.in` is a **static `index.html` (repo root) served via GitHub Pages** (see `CNAME`). It talks to the
+backend via a hardcoded `GAS_URL` constant in that file — a specific Apps Script **deployment ID**, not `@HEAD`.
+
+This means **`clasp push` alone never updates the live site** — it only updates the script's `@HEAD` (dev) version.
+To actually ship a change to `dms.dataimpact.in`:
+1. `git pull` first — this repo has drifted out of sync with GitHub before (local sat 10 commits behind), and
+   force-pushing stale local files to Apps Script silently reverted a live bug fix (OTP epoch-millis parsing).
+2. Check `index.html`'s current `GAS_URL` (root file, not `src/ui/Index.html`) to find the deployment ID actually in use — CLAUDE.md's own URL above can drift out of sync with it (has happened at least twice).
+3. `clasp deploy -i <that deployment ID> -d "description"` — redeploying to the *wrong* deployment ID (e.g. the
+   `AKfycbxpUe9Q...` one, which is unused) is a silent no-op for real users but easy to mistake for success.
+4. If anything breaks for all users after a deploy (e.g. login fails system-wide), `clasp versions` to find the
+   last-known-good version number and `clasp deploy -i <id> -V <n>` to roll back immediately — sheet/data-only
+   fixes (like backfilling a column) are independent of which code version is live, so a rollback won't undo them.
+
+There is also a separate in-Apps-Script UI (`src/ui/Index.html`) served directly off the GAS exec URL — distinct
+codepath from the root `index.html`, kept in sync manually.
+
+---
+
 ## Project Overview
 **Document Management System** for UP Shiksha Vibhag team.
 Organization: **Educate Girls** (educategirls.ngo)
