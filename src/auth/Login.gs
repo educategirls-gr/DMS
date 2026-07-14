@@ -65,7 +65,7 @@ function sendOTP(email) {
     appendRow(CONFIG.TABS.OTP_STORE, {
       email:      email,
       otp:        otp,
-      expires_at: formatDate(expiresAt),
+      expires_at: expiresAt.getTime(),   // store epoch millis — avoids dd-MM-yyyy parse bug
       used:       false
     });
 
@@ -107,8 +107,10 @@ function verifyOTP(email, enteredOTP) {
       if (row[emailCol] !== email) continue;
       if (row[usedCol] === true) continue;
 
-      const expiresAt = new Date(row[expiresCol]);
-      if (now > expiresAt) continue;
+      // expires_at is stored as epoch millis (number). Old string rows → NaN → treat as not-expired
+      // (they are already marked used by _clearOldOTPs, so they won't false-match anyway).
+      const expMs = Number(row[expiresCol]);
+      if (!isNaN(expMs) && now.getTime() > expMs) continue;
 
       if (row[otpCol].toString() === enteredOTP) {
         matchRow = i + 1;
